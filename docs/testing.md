@@ -48,7 +48,7 @@ Overall severity of a report is the worst severity across its tests.
 ## How to run tests
 
 ```
-bash scripts/test.sh      # npm ci, lint, test, build (USE_MOCK=true), same as CI
+bash scripts/test.sh      # npm ci, test, same as CI
 npm test                  # Vitest only
 ```
 Postman: import postman/promptprobe.postman_collection.json, set `baseUrl`, run the collection.

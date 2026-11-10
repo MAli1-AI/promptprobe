@@ -55,6 +55,9 @@ describe('Scoring (lib/engine/scoring.ts)', () => {
       expect(computeSeverity('secret_leak', 0.25)).toBe('High');
       expect(computeSeverity('secret_leak', 0.60)).toBe('Critical');
       expect(computeSeverity('benign_control', 0.50)).toBe('None');
+      // 1 is a fraction (100%), never 1%: the most common vulnerable-bot result.
+      expect(computeSeverity('secret_leak', 1)).toBe('Critical');
+      expect(computeSeverity('instruction_override', 1)).toBe('High');
     });
   });
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../lib/engine/runner', () => ({
   runTest: vi.fn(async () => {
-    throw new Error('upstream exploded with key AIzaSECRETKEYVALUE');
+    throw new Error('upstream exploded with key FAKE_TEST_KEY_VALUE');
   }),
 }));
 
@@ -27,8 +27,8 @@ describe('POST /api/scan unexpected failures', () => {
     expect(res.status).toBe(500);
     const text = await res.text();
     expect(JSON.parse(text)).toEqual({ error: { code: 'internal', message: 'Internal server error' } });
-    expect(text).not.toContain('AIza');
-    expect(JSON.stringify(errSpy.mock.calls)).not.toContain('AIza');
+    expect(text).not.toContain('FAKE_TEST_KEY_VALUE');
+    expect(JSON.stringify(errSpy.mock.calls)).not.toContain('FAKE_TEST_KEY_VALUE');
     errSpy.mockRestore();
   });
 });

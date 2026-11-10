@@ -177,10 +177,10 @@ describe('GET /api/targets', () => {
   });
 
   it('never exposes keys or env values', async () => {
-    process.env.GEMINI_API_KEY = 'AIzaSECRETKEYVALUE';
+    process.env.GEMINI_API_KEY = 'FAKE_TEST_KEY_VALUE';
     try {
       const text = await (await GET()).text();
-      expect(text).not.toContain('AIzaSECRETKEYVALUE');
+      expect(text).not.toContain('FAKE_TEST_KEY_VALUE');
     } finally {
       delete process.env.GEMINI_API_KEY;
     }

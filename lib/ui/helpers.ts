@@ -57,6 +57,24 @@ export function validateRuns(input: string | number): {
   return { valid: true, value: num };
 }
 
+/**
+ * Clamps a runs value to [min, max], floors decimals, and falls back to 3 for invalid input.
+ */
+export function clampRuns(value: number | string, min = 1, max = 10, fallback = 3): number {
+  const n = typeof value === 'string' ? Number(value) : value;
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, Math.trunc(n)));
+}
+
+/**
+ * Progress text for the scan loop, e.g. "test 3 of 12".
+ */
+export function formatProgress(completed: number, total: number): string {
+  return `test ${completed} of ${total}`;
+}
+
 export interface BadgeStyle {
   label: string;
   symbol: string;

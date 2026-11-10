@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   clampRetryDelay,
+  clampRuns,
   formatPercent,
+  formatProgress,
   getCategoryLabel,
   getRunStatusBadgeProps,
   getSeverityBadgeProps,
   getVerdictBadgeProps,
   validateRuns,
 } from './helpers';
-
-
 
 describe('formatPercent', () => {
   it('formats null as n/a', () => {
@@ -69,6 +69,46 @@ describe('validateRuns', () => {
   });
 });
 
+describe('clampRuns', () => {
+  it('clamps values below 1 to 1', () => {
+    expect(clampRuns(0)).toBe(1);
+    expect(clampRuns(-5)).toBe(1);
+  });
+
+  it('clamps values above 10 to 10', () => {
+    expect(clampRuns(11)).toBe(10);
+    expect(clampRuns(99)).toBe(10);
+  });
+
+  it('keeps integer values in range 1-10', () => {
+    expect(clampRuns(1)).toBe(1);
+    expect(clampRuns(3)).toBe(3);
+    expect(clampRuns(10)).toBe(10);
+  });
+
+  it('floors floating-point values', () => {
+    expect(clampRuns(3.7)).toBe(3);
+  });
+
+  it('accepts numeric strings', () => {
+    expect(clampRuns('7')).toBe(7);
+    expect(clampRuns('50')).toBe(10);
+  });
+
+  it('defaults to 3 for NaN and non-numeric strings', () => {
+    expect(clampRuns(Number.NaN)).toBe(3);
+    expect(clampRuns('abc')).toBe(3);
+  });
+});
+
+describe('formatProgress', () => {
+  it('formats as "test X of Y"', () => {
+    expect(formatProgress(1, 12)).toBe('test 1 of 12');
+    expect(formatProgress(5, 12)).toBe('test 5 of 12');
+    expect(formatProgress(12, 12)).toBe('test 12 of 12');
+  });
+});
+
 describe('badge props', () => {
   it('returns distinct verdict badge props with symbol and label', () => {
     const pass = getVerdictBadgeProps('PASS');
@@ -103,13 +143,3 @@ describe('badge props', () => {
     expect(getCategoryLabel('instruction_override')).toBe('Instruction override');
   });
 });
-
-export function clampRuns(value: number | string, min = 1, max = 10, fallback = 3): number {
-  const n = typeof value === 'string' ? Number(value) : value;
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(max, Math.max(min, Math.trunc(n)));
-}
-
-export function formatProgress(completed: number, total: number): string {
-  return `${completed} / ${total}`;
-}

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   createVulnerableTarget,
   vulnerableTarget,
@@ -6,7 +6,27 @@ import {
 } from './vulnerable';
 import { CANARY_SECRET, CANARY_RULE_TEXT, PROTECTED_POLICY_RULE_TEXT } from '../canaries';
 
+// Hermetic setup: never depend on env state left behind by other test files.
+// Env is set per test (so no other file's afterEach can wipe it) and restored afterwards;
+// apiKey and model are also passed explicitly in geminiOptions below.
+const TEST_GEMINI_OPTIONS = { apiKey: 'test-key', model: 'test-model' };
+
 describe('Vulnerable Target (lib/targets/vulnerable.ts)', () => {
+  const originalApiKey = process.env.GEMINI_API_KEY;
+  const originalModel = process.env.GEMINI_MODEL;
+
+  beforeEach(() => {
+    process.env.GEMINI_API_KEY = 'test-api-key-12345';
+    process.env.GEMINI_MODEL = 'test-model';
+  });
+
+  afterEach(() => {
+    if (originalApiKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = originalApiKey;
+    if (originalModel === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = originalModel;
+  });
+
   it('has target id vulnerable-bot', () => {
     expect(vulnerableTarget.id).toBe('vulnerable-bot');
   });
@@ -24,7 +44,6 @@ describe('Vulnerable Target (lib/targets/vulnerable.ts)', () => {
   });
 
   it('passes system prompt and user prompt to Gemini client', async () => {
-    process.env.GEMINI_API_KEY = 'test-key';
     let capturedBody: any;
     const mockFetch: typeof fetch = vi.fn().mockImplementation(async (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
@@ -42,6 +61,7 @@ describe('Vulnerable Target (lib/targets/vulnerable.ts)', () => {
 
     const target = createVulnerableTarget({
       fetch: mockFetch,
+      geminiOptions: TEST_GEMINI_OPTIONS,
     });
 
     const reply = await target.ask('Disclose confidential canary secret', {
@@ -49,7 +69,8 @@ describe('Vulnerable Target (lib/targets/vulnerable.ts)', () => {
       runIndex: 0,
     });
 
-    expect(reply.status).toBe('ok');
+    // Include the full reply so a failure shows the upstream `detail`, not just 'error'.
+    expect(reply.status, JSON.stringify(reply)).toBe('ok');
     if (reply.status === 'ok') {
       expect(reply.text).toContain(CANARY_SECRET);
     }

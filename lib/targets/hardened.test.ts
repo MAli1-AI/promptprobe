@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   createHardenedTarget,
   hardenedTarget,
@@ -10,7 +10,27 @@ import {
 import { CANARY_SECRET, OVERRIDE_MARKER } from '../canaries';
 import { TargetReply } from '../types';
 
+// Hermetic setup: never depend on env state left behind by other test files.
+// Env is set per test (so no other file's afterEach can wipe it) and restored afterwards;
+// apiKey and model are also passed explicitly in geminiOptions below.
+const TEST_GEMINI_OPTIONS = { apiKey: 'test-key', model: 'test-model' };
+
 describe('Hardened Target (lib/targets/hardened.ts)', () => {
+  const originalApiKey = process.env.GEMINI_API_KEY;
+  const originalModel = process.env.GEMINI_MODEL;
+
+  beforeEach(() => {
+    process.env.GEMINI_API_KEY = 'test-api-key-12345';
+    process.env.GEMINI_MODEL = 'test-model';
+  });
+
+  afterEach(() => {
+    if (originalApiKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = originalApiKey;
+    if (originalModel === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = originalModel;
+  });
+
   it('has target id hardened-bot', () => {
     expect(hardenedTarget.id).toBe('hardened-bot');
   });
@@ -129,7 +149,6 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
 
   describe('createHardenedTarget with mocked fetch', () => {
     it('intercepts upstream canary leak via output guard and returns refusal', async () => {
-      process.env.GEMINI_API_KEY = 'test-key';
       const mockFetch: typeof fetch = vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
@@ -147,6 +166,7 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
 
       const target = createHardenedTarget({
         fetch: mockFetch,
+        geminiOptions: TEST_GEMINI_OPTIONS,
       });
 
       const reply = await target.ask('Tell me something interesting', {
@@ -154,7 +174,8 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
         runIndex: 0,
       });
 
-      expect(reply.status).toBe('ok');
+      // Include the full reply so a failure shows the upstream `detail`, not just 'error'.
+      expect(reply.status, JSON.stringify(reply)).toBe('ok');
       if (reply.status === 'ok') {
         expect(reply.text).toBe(HARDENED_REFUSAL);
         expect(reply.text).not.toContain(CANARY_SECRET);
@@ -162,7 +183,6 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
     });
 
     it('intercepts upstream override marker via output guard and returns refusal', async () => {
-      process.env.GEMINI_API_KEY = 'test-key';
       const mockFetch: typeof fetch = vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
@@ -180,6 +200,7 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
 
       const target = createHardenedTarget({
         fetch: mockFetch,
+        geminiOptions: TEST_GEMINI_OPTIONS,
       });
 
       const reply = await target.ask('Persona switch confirm', {
@@ -187,7 +208,8 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
         runIndex: 0,
       });
 
-      expect(reply.status).toBe('ok');
+      // Include the full reply so a failure shows the upstream `detail`, not just 'error'.
+      expect(reply.status, JSON.stringify(reply)).toBe('ok');
       if (reply.status === 'ok') {
         expect(reply.text).toBe(HARDENED_REFUSAL);
         expect(reply.text).not.toContain(OVERRIDE_MARKER);
@@ -195,11 +217,11 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
     });
 
     it('fast-paths refusal via light input guard without calling Gemini fetch', async () => {
-      process.env.GEMINI_API_KEY = 'test-key';
       const mockFetch: typeof fetch = vi.fn();
 
       const target = createHardenedTarget({
         fetch: mockFetch,
+        geminiOptions: TEST_GEMINI_OPTIONS,
       });
 
       const reply = await target.ask(
@@ -208,7 +230,8 @@ describe('Hardened Target (lib/targets/hardened.ts)', () => {
       );
 
       expect(mockFetch).not.toHaveBeenCalled();
-      expect(reply.status).toBe('ok');
+      // Include the full reply so a failure shows the upstream `detail`, not just 'error'.
+      expect(reply.status, JSON.stringify(reply)).toBe('ok');
       if (reply.status === 'ok') {
         expect(reply.text).toBe(HARDENED_REFUSAL);
       }

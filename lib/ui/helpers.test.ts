@@ -9,6 +9,8 @@ import {
   validateRuns,
 } from './helpers';
 
+
+
 describe('formatPercent', () => {
   it('formats null as n/a', () => {
     expect(formatPercent(null)).toBe('n/a');
@@ -101,3 +103,13 @@ describe('badge props', () => {
     expect(getCategoryLabel('instruction_override')).toBe('Instruction override');
   });
 });
+
+export function clampRuns(value: number | string, min = 1, max = 10, fallback = 3): number {
+  const n = typeof value === 'string' ? Number(value) : value;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.trunc(n)));
+}
+
+export function formatProgress(completed: number, total: number): string {
+  return `${completed} / ${total}`;
+}

@@ -144,7 +144,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50/60 pb-16 dark:bg-slate-950">
+    <main className="min-h-screen pb-16">
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="space-y-2 border-b border-slate-200 pb-6 dark:border-slate-800">

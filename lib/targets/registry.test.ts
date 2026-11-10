@@ -60,9 +60,12 @@ describe('Target Registry (lib/targets/registry.ts)', () => {
         expect(() => getTarget(url)).toThrow(NotAllowedError);
         try {
           getTarget(url);
-        } catch (err: any) {
+        } catch (err: unknown) {
           expect(err).toBeInstanceOf(NotAllowedError);
           expect(err).toBeInstanceOf(Error);
+          if (!(err instanceof NotAllowedError)) {
+            throw err;
+          }
           expect(err.name).toBe('NotAllowedError');
           expect(err.code).toBe('target_not_allowed');
           expect(err.message).toContain(url);
